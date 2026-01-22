@@ -1,0 +1,54 @@
+version: "3.9"
+
+networks:
+    private_net:
+        driver: bridge
+
+volumes:
+    pgdata:
+
+services:
+    db:
+        image: postgres:15
+        container_name: postgres
+        restart: always
+        environment:
+            POSTGRES_DB: ${DB_NAME}
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        networks:
+            - private_net
+        healthcheck:
+          test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+          interval: 5s
+          timeout: 3s
+          retries: 5
+
+    backend:
+        build: ./backend
+        container_name: backend
+        depends_on:
+            db:
+                condition: service_healthy
+        environment:
+            DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+        networks:
+            - private_net
+        healthcheck:
+            test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')\""]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    frontend:
+        build: ./frontend
+        container_name: frontend
+        ports:
+          - "8080:80"
+        depends_on:
+          backend:
+            condition: service_healthy
+        networks:
+          - private_net

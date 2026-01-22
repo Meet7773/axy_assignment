@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Axy DevOps Test</title>
+</head>
+<body>
+  <h1>Axy DevOps Assignment</h1>
+  <button onclick="load()">Call Backend</button>
+  <pre id="output"></pre>
+
+  <script>
+    async function load() {
+      const res = await fetch("/api/message");
+      const data = await res.json();
+      document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
